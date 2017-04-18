@@ -1,6 +1,7 @@
 package com.akyuu.simpleweather;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -85,6 +86,11 @@ public class ChooseAreaFragment extends BackKeyFragment {
                 } else if (mCurrentLevel == LEVEL_CITY) {
                     mSelectedCity = mCityList.get(position);
                     queryCounties();
+                } else if (mCurrentLevel == LEVEL_COUNTY) {
+                    String weatherId = mCountyList.get(position).weatherId;
+                    Intent intent = WeatherActivity.newIntent(getContext(), weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
                 }
             }
         });
