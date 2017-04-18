@@ -147,6 +147,8 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     private void showWeatherInfo(Weather weather) {
+        Intent intent = new Intent(this, AutoUpdateService.class);
+        startService(intent);
         mTitleCity.setText(weather.mBasic.mCityName);
         mTitleUpdateTime.setText(weather.mBasic.mUpdate.updateTime.split(" ")[1]);
         mDegreeText.setText(String.format("%s 度", weather.mNow.mTemperature));
