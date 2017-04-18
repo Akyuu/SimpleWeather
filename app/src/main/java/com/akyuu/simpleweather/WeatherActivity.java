@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
-import android.preference.PreferenceManager;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -27,6 +30,7 @@ import java.io.IOException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Response;
@@ -45,6 +49,8 @@ public class WeatherActivity extends AppCompatActivity {
     @BindView(R.id.comfort_text) TextView mComfortText;
     @BindView(R.id.car_wash_text) TextView mCarWashText;
     @BindView(R.id.sport_text) TextView mSportText;
+    @BindView(R.id.swipe_refresh) SwipeRefreshLayout mSwipeRefreshLayout;
+    @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,13 +66,17 @@ public class WeatherActivity extends AppCompatActivity {
 
         ButterKnife.bind(this);
 
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.colorPrimary);
+
         SharedPreferences preferences = getSharedPreferences("weather", MODE_PRIVATE);
         String weatherString = preferences.getString("weather", null);
+        final String weatherId;
         if (weatherString != null) {
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            weatherId = weather.mBasic.mWeatherId;
             showWeatherInfo(weather);
         } else {
-            String weatherId = getIntent().getStringExtra("weather_id");
+            weatherId = getIntent().getStringExtra("weather_id");
             mWeatherLayout.setVisibility(View.INVISIBLE);
             requestWeather(weatherId);
         }
@@ -77,6 +87,19 @@ public class WeatherActivity extends AppCompatActivity {
         } else {
             loadBingPic();
         }
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(weatherId);
+                loadBingPic();
+            }
+        });
+    }
+
+    @OnClick(R.id.nav_button)
+    public void openDrawer() {
+        mDrawerLayout.openDrawer(GravityCompat.START);
     }
 
     public static Intent newIntent(Context context, String weatherId) {
@@ -85,7 +108,7 @@ public class WeatherActivity extends AppCompatActivity {
         return intent;
     }
 
-    private void requestWeather(final String weatherId) {
+    public void requestWeather(final String weatherId) {
         String weatherUrl = "http://guolin.tech/api/weather?cityid="
                 + weatherId + "&key=" + Config.KEY;
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
@@ -95,6 +118,7 @@ public class WeatherActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         ToastUtil.show("获取天气信息失败", Toast.LENGTH_SHORT);
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 });
             }
@@ -115,6 +139,7 @@ public class WeatherActivity extends AppCompatActivity {
                         } else {
                             ToastUtil.show("获取天气信息失败", Toast.LENGTH_SHORT);
                         }
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 });
             }
@@ -179,5 +204,17 @@ public class WeatherActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        Fragment fragment = getSupportFragmentManager()
+                .findFragmentById(R.id.choose_area_fragment);
+        if (mDrawerLayout.isDrawerOpen(GravityCompat.START)
+                && fragment instanceof BackKeyFragment) {
+            ((BackKeyFragment) fragment).onBackPressed();
+        } else {
+            super.onBackPressed();
+        }
     }
 }

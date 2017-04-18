@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -88,9 +87,17 @@ public class ChooseAreaFragment extends BackKeyFragment {
                     queryCounties();
                 } else if (mCurrentLevel == LEVEL_COUNTY) {
                     String weatherId = mCountyList.get(position).weatherId;
-                    Intent intent = WeatherActivity.newIntent(getContext(), weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if (getActivity() instanceof MainActivity) {
+                        Intent intent = WeatherActivity.newIntent(getContext(), weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    } else if (getActivity() instanceof WeatherActivity) {
+                        WeatherActivity activity = ((WeatherActivity) getActivity());
+                        activity.mDrawerLayout.closeDrawers();
+                        activity.mSwipeRefreshLayout.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
+
                 }
             }
         });
