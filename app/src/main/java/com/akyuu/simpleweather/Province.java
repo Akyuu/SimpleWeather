@@ -10,13 +10,13 @@ import com.raizlabs.android.dbflow.structure.BaseModel;
 public class Province extends BaseModel {
 
     @PrimaryKey(autoincrement = true)
-    long id;
+    public long id;
 
     @Column
-    String name;
+    public String name;
 
     @Column
     @Unique
-    long code;
+    public long code;
 
 }

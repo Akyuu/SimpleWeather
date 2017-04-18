@@ -2,21 +2,21 @@ package com.akyuu.simpleweather;
 
 import com.raizlabs.android.dbflow.annotation.Column;
 import com.raizlabs.android.dbflow.annotation.PrimaryKey;
-import com.raizlabs.android.dbflow.annotation.Unique;
+import com.raizlabs.android.dbflow.annotation.Table;
 import com.raizlabs.android.dbflow.structure.BaseModel;
 
+@Table(database = AppDatabase.class)
 public class County extends BaseModel {
 
     @PrimaryKey(autoincrement = true)
-    long id;
+    public long id;
 
     @Column
-    String name;
+    public String name;
 
     @Column
-    String weatherId;
+    public String weatherId;
 
     @Column
-    long cityId;
-
+    public long cityId;
 }
