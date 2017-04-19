@@ -4,10 +4,10 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -40,6 +40,7 @@ public class ChooseAreaFragment extends BackKeyFragment {
     @BindView(R.id.title_text) TextView mTitleTextView;
     @BindView(R.id.back_button) Button mBackButton;
     @BindView(R.id.list_view) ListView mListView;
+    @BindView(R.id.search_view) SearchView mSearchView;
 
     private ArrayAdapter<String> mAdapter;
     private List<String> mDataList = new ArrayList<>();
@@ -66,7 +67,7 @@ public class ChooseAreaFragment extends BackKeyFragment {
         View view = inflater.inflate(R.layout.choose_area, container, false);
         ButterKnife.bind(this, view);
 
-        mAdapter = new ArrayAdapter<String>(getContext(),
+        mAdapter = new ArrayAdapter<>(getContext(),
                 android.R.layout.simple_list_item_1, mDataList);
         mListView.setAdapter(mAdapter);
 
@@ -76,38 +77,80 @@ public class ChooseAreaFragment extends BackKeyFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-                if (mCurrentLevel == LEVEL_PROVINCE) {
-                    mSelectedProvince = mProvinceList.get(position);
-                    queryCities();
-                } else if (mCurrentLevel == LEVEL_CITY) {
-                    mSelectedCity = mCityList.get(position);
-                    queryCounties();
-                } else if (mCurrentLevel == LEVEL_COUNTY) {
-                    String weatherId = mCountyList.get(position).weatherId;
-                    if (getActivity() instanceof MainActivity) {
-                        Intent intent = WeatherActivity.newIntent(getContext(), weatherId);
-                        startActivity(intent);
-                        getActivity().finish();
-                    } else if (getActivity() instanceof WeatherActivity) {
-                        WeatherActivity activity = ((WeatherActivity) getActivity());
-                        activity.mDrawerLayout.closeDrawers();
-                        activity.mSwipeRefreshLayout.setRefreshing(true);
-                        activity.requestWeather(weatherId);
-                    }
-
+        mListView.setOnItemClickListener((adapterView, view, position, id) -> {
+            if (mCurrentLevel == LEVEL_PROVINCE) {
+                mSelectedProvince = mProvinceList.stream()
+                        .filter(province -> province.name.equals(mDataList.get(position)))
+                        .findFirst().get();
+                queryCities();
+            } else if (mCurrentLevel == LEVEL_CITY) {
+                mSelectedCity = mCityList.stream()
+                        .filter(city -> city.name.equals(mDataList.get(position)))
+                        .findFirst().get();
+                queryCounties();
+            } else if (mCurrentLevel == LEVEL_COUNTY) {
+                String weatherId = mCountyList.stream()
+                        .filter(county -> county.name.equals(mDataList.get(position)))
+                        .findFirst().get().weatherId;
+                if (getActivity() instanceof MainActivity) {
+                    Intent intent = WeatherActivity.newIntent(getContext(), weatherId);
+                    startActivity(intent);
+                    getActivity().finish();
+                } else if (getActivity() instanceof WeatherActivity) {
+                    WeatherActivity activity = ((WeatherActivity) getActivity());
+                    activity.mDrawerLayout.closeDrawers();
+                    activity.mSwipeRefreshLayout.setRefreshing(true);
+                    activity.requestWeather(weatherId);
                 }
+
             }
         });
-        mBackButton.setOnClickListener(new View.OnClickListener() {
+
+        mBackButton.setOnClickListener(view -> onBackPressed());
+
+        mSearchView.setSubmitButtonEnabled(false);
+        mSearchView.onActionViewExpanded();
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public void onClick(View view) {
-                onBackPressed();
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(final String newText) {
+                if (newText.equals("")) {
+                    return true;
+                }
+                switch (mCurrentLevel) {
+                    case LEVEL_PROVINCE:
+                        mDataList.clear();
+                        mProvinceList.stream()
+                                .filter(province -> province.name.contains(newText))
+                                .forEach(province -> mDataList.add(province.name));
+                        mAdapter.notifyDataSetChanged();
+                        break;
+                    case LEVEL_CITY:
+                        mDataList.clear();
+                        mCityList.stream()
+                                .filter(city -> city.name.contains(newText))
+                                .forEach(city -> mDataList.add(city.name));
+                        mAdapter.notifyDataSetChanged();
+                        break;
+                    case LEVEL_COUNTY:
+                        mDataList.clear();
+                        mCountyList.stream()
+                                .filter(county -> county.name.contains(newText))
+                                .forEach(county -> mDataList.add(county.name));
+                        break;
+                    default:
+                        break;
+                }
+                return true;
             }
         });
+
         queryProvinces();
+        mSearchView.clearFocus();
     }
 
     private void queryProvinces() {
@@ -119,6 +162,7 @@ public class ChooseAreaFragment extends BackKeyFragment {
             for (Province province : mProvinceList) {
                 mDataList.add(province.name);
             }
+            mSearchView.setQuery("", false);
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
             mCurrentLevel = LEVEL_PROVINCE;
@@ -139,6 +183,7 @@ public class ChooseAreaFragment extends BackKeyFragment {
             for (City city : mCityList) {
                 mDataList.add(city.name);
             }
+            mSearchView.setQuery("", false);
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
             mCurrentLevel = LEVEL_CITY;
@@ -160,6 +205,7 @@ public class ChooseAreaFragment extends BackKeyFragment {
             for (County county : mCountyList) {
                 mDataList.add(county.name);
             }
+            mSearchView.setQuery("", false);
             mAdapter.notifyDataSetChanged();
             mListView.setSelection(0);
             mCurrentLevel = LEVEL_COUNTY;
