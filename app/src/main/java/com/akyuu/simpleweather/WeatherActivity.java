@@ -52,6 +52,8 @@ public class WeatherActivity extends AppCompatActivity {
     @BindView(R.id.swipe_refresh) SwipeRefreshLayout mSwipeRefreshLayout;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
 
+    private String mWeatherId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,15 +72,14 @@ public class WeatherActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("weather", MODE_PRIVATE);
         String weatherString = preferences.getString("weather", null);
-        final String weatherId;
         if (weatherString != null) {
             Weather weather = Utility.handleWeatherResponse(weatherString);
-            weatherId = weather.mBasic.mWeatherId;
+            mWeatherId = weather.mBasic.mWeatherId;
             showWeatherInfo(weather);
         } else {
-            weatherId = getIntent().getStringExtra("weather_id");
+            mWeatherId = getIntent().getStringExtra("weather_id");
             mWeatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
+            requestWeather(mWeatherId);
         }
 
         String bingPic = preferences.getString("bing_pic", null);
@@ -91,7 +92,7 @@ public class WeatherActivity extends AppCompatActivity {
         mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                requestWeather(weatherId);
+                requestWeather(mWeatherId);
                 loadBingPic();
             }
         });
@@ -109,6 +110,7 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     public void requestWeather(final String weatherId) {
+        mWeatherId = weatherId;
         String weatherUrl = "http://guolin.tech/api/weather?cityid="
                 + weatherId + "&key=" + Config.KEY;
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
